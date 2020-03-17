@@ -1,5 +1,7 @@
-# lastApplied & commitIndex & latLogIndex 示意图
+# Raft源码分析（三） - commit提交状态跟踪
 
-# Leader 中lastApplied & commitIndex源码分析
+## lastApplied & commitIndex & latLogIndex 示意图
 
-# Follower 中commitIndex源码分析
+## Leader 中lastApplied & commitIndex源码分析
+
+## Follower 中commitIndex源码分析
