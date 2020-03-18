@@ -1,6 +1,9 @@
 theme: jekyll-theme-slate
 title: 时光粒子源码
+keyword: raft,raft源码分析,sofa-jraft,sofa-jraft源码分析,分布式,分布式一致性,分布式存储,分布式中间件
 author: haoliu
 name : Neo Liu
 email : widespread@sina.com
 github : https://github.com/timequark
+
+search: true
