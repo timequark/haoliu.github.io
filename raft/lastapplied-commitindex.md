@@ -249,7 +249,7 @@ class Follower(BaseRole):
         self.election_timer.reset()
 ```
 
-[上一篇](https://timequark.github.io/raft/state.md) 
+[上一篇](https://timequark.github.io/raft/role.md) 
 
 [下一篇](https://timequark.github.io/raft/nextIndex-matchIndex )
 
