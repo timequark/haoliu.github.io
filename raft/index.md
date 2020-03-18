@@ -11,3 +11,5 @@
 ## Raft源码分析（二） - State状态机
 
 ## Raft源码分析（三） - [commit提交状态跟踪](https://timequark.github.io/raft/lastapplied-commitindex)
+
+## Raft源码分析（四） - [next_index&match_index](https://timequark.github.io/raft/nextIndex-matchIndex)
