@@ -24,7 +24,7 @@ class Log:
 
 ​    self.cache = self.read()
 
-​    \# All States
+​    # All States
 
     # commit_index、last_applied在所有Role角色中均会使用到，分析后得知，目前只有Leader/Follower才会使用到，其实 Candidate 只是用来election时才会用到，是一个临时跳板角色
 ​    """Volatile state on all servers: index of highest log entry known to be committed
@@ -35,7 +35,7 @@ class Log:
 ​    (initialized to 0, increases monotonically)"""
 ​    self.last_applied = 0
 
-​    \# Leaders
+​    # Leaders
 
 
 
