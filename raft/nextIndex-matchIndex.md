@@ -63,7 +63,7 @@ class Leader(BaseRole):
 
 
 
-[上一篇](https://timequark.github.io/raft/lastapplied-commitindex.md) 
+[上一篇](https://timequark.github.io/raft/lastapplied-commitindex) 
 
 [下一篇](https://timequark.github.io/raft/) 
 

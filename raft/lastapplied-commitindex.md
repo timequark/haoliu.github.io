@@ -251,7 +251,7 @@ class Follower(BaseRole):
 
 [上一篇](https://timequark.github.io/raft/state.md) 
 
-[下一篇](https://timequark.github.io/raft/nextIndex&matchIndex.md) 
+[下一篇](https://timequark.github.io/raft/nextIndex-matchIndex )
 
 
 
