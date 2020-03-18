@@ -1,5 +1,9 @@
 # Raft源码分析（三） - commit提交状态跟踪
 
+## lastApplied & commitIndex & latLogIndex 示意图
+
+![](https://timequark.github.io/raft/lastApplied&commitIndex&lastLogIndex.jpg)
+
 ##### storage.py
 
 ```python
@@ -52,8 +56,6 @@ class Log:
 ```
 
 
-
-## lastApplied & commitIndex & latLogIndex 示意图
 
 ## Leader 中lastApplied & commitIndex源码分析
 
