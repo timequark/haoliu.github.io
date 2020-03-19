@@ -26,6 +26,25 @@ raft 中的 Role 角色共有三类
 
   只用来做 election 选举。
 
-  
+  首先，term + 1，voted_for 置为自身的 ID，给自己投1票，然后广播 request_vote 请求。收到过半 vote_granted 为 True 的 response 后，升级为 Leader。如果定时器触发前，没有赢得过半的投票，则直接转变成  Follower 角色。
+
+  下面小节会具体分析 request_vote  请求携带的参数。
 
 - **Follower**
+
+  接收来自 Leader  的 append_entries 请求、来自 Candidate 的 request_vote 请求。这里要注意以下几点：
+
+  （1）Follower.start 时，  init_storage 方法只能第一次加载时才对 term 置 0，但每次都会重置 voted_for。
+
+  （2）on_receive_append_entries 只有在顺利通过 @validate_term、@validate_commit_index 验证时，才会重置 election_timer，否则就有退化为 Candidate 进行重新选举的可能。
+
+  （3）on_receive_request_vote 只有在没有投过票，并且来自 Candidate  的 last_log_term、last_log_index  有效时，才会回应 vote_granted 为 True。
+
+  （4）***on_receive_request_vote 没有重置 election_timer 动作***。因为作为 Follower 自身，并不知道此次选举是否会有新的 Leader 生成，只能通过有效的 on_receive_request_vote  才能感知  Leader  的存在。
+
+## Leader 分析
+
+## Candidate 分析
+
+## Follower 分析
+
