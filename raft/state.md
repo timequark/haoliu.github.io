@@ -10,11 +10,11 @@ State 是上下文，将网络、Role转换、Log、FileStorage、StateMachine�
 
 ![](https://timequark.github.io/raft/img/state.jpg)
 
-（可以下载看大图~）
+（可以下载保存图片看大图~~~）
 
 
 
-可以看出，State 是整个系统中的核心引擎类，衔接了Network、Node、Role（包括Leader/Follower/Candidate）、Log、StateMachine、FileStorage 等各个对象之前的联系。
+可以看出，State 是整个系统中的核心引擎类，衔接了Network、Node、Role（包括Leader/Follower/Candidate）、Log、StateMachine、FileStorage 等各个对象之间的联系。
 
 
 
