@@ -8,7 +8,7 @@
 
 ## Raft源码分析（一） - [State](https://timequark.github.io/raft/state)
 
-## Raft源码分析（二） - Role转换
+## Raft源码分析（二） - [Role转换](https://timequark.github.io/raft/role)
 
 ## Raft源码分析（三） - [commit提交状态跟踪](https://timequark.github.io/raft/lastapplied-commitindex)
 
