@@ -6,7 +6,7 @@
 
 了解raft原理的好处、目的是，更好的理解raft源码，不至于非常吃力~
 
-## Raft源码分析（一） - State
+## Raft源码分析（一） - [State](https://timequark.github.io/raft/state)
 
 ## Raft源码分析（二） - Role转换
 
