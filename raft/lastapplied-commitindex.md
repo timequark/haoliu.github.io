@@ -2,7 +2,7 @@
 
 ## lastApplied & commitIndex & latLogIndex 示意图
 
-![](https://timequark.github.io/raft/lastApplied&commitIndex&lastLogIndex.jpg)
+![](https://timequark.github.io/raft/img/lastApplied&commitIndex&lastLogIndex.jpg)
 
 上图中，上半部分说明lastApplied会根据commitIndex，自动追平。当 Leader 中的 index 为 9 的 entry，完成半
 
