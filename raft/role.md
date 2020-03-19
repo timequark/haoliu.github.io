@@ -48,3 +48,15 @@ raft 中的 Role 角色共有三类
 
 ## Follower 分析
 
+
+
+
+
+
+
+
+
+[上一篇](https://timequark.github.io/raft/state) 
+
+[下一篇](https://timequark.github.io/raft/lastapplied-commitindex )
+
