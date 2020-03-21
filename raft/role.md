@@ -1,5 +1,19 @@
 # Raft源码分析（二） - Role转换
 
+先来看一下raft白皮书中的 role 角色转换图：
+
+![](https://timequark.github.io/raft/img/role-convert-ref.jpg)
+
+
+
+下面的是个人土制的转换图：
+
+![](https://timequark.github.io/raft/img/role-change.jpg)
+
+
+
+
+
 raft 中的 Role 角色共有三类
 
 - **Leader**
