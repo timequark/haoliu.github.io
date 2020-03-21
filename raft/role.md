@@ -228,9 +228,288 @@ class Leader(BaseRole):
 
 ## Candidate
 
+**state.py**
+
+```python
+class Candidate(BaseRole):
+    """Raft Candidate
+    — On conversion to candidate, start election:
+        — Increment self term
+        — Vote for self
+        — Reset election timer
+        — Send RequestVote RPCs to all other servers
+    — If votes received from majority of servers: become leader
+    — If AppendEntries RPC received from new leader: convert to follower
+    — If election timeout elapses: start new election
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # election 超时后，自动转变成 Follower
+        self.election_timer = Timer(self.election_interval, self.state.to_follower)
+        self.vote_count = 0
+
+    def start(self):
+        """Increment current term, vote for herself & send vote requests"""
+        # 开始 election 时，term 自加 1，且给自己投一票
+        self.storage.update({
+            'term': self.storage.term + 1,
+            'voted_for': self.id
+        })
+
+        self.vote_count = 1
+
+        # 发送拉票消息
+        self.request_vote()
+
+        # 启动 election timer
+        self.election_timer.start()
+
+    def stop(self):
+        self.election_timer.stop()
+
+    def request_vote(self):
+        """RequestVote RPC — gather votes
+        Arguments:
+            term — candidate’s term
+            candidate_id — candidate requesting vote
+            last_log_index — index of candidate’s last log entry
+            last_log_term — term of candidate’s last log entry
+        """
+        data = {
+            'type': 'request_vote',
+
+            'term': self.storage.term,
+            'candidate_id': self.id,
+            'last_log_index': self.log.last_log_index,
+            'last_log_term': self.log.last_log_term
+        }
+        #
+        # 向集群中其它所有节点广播 request_vote 消息，不论其它节点的 Role 是 Leader、Folloer、还是 Candidate，
+        # 每个节点各自到什么时间，做什么事，
+        # 因此 BaseRole 中抽象了以下几个方法的空实现，来应对可能接收到的各中消息的可能：
+        # - on_receive_request_vote(self, data)
+        # - on_receive_request_vote_response(self, data)
+        # - on_receive_append_entries(self, data)
+        # - on_receive_append_entries_response(self, data)
+        #
+        self.state.broadcast(data)
+
+    @validate_term
+    def on_receive_request_vote_response(self, data):
+        """Receives response for vote request.
+        If the vote was granted then check if we got majority and may become Leader
+        """
+
+        if data.get('vote_granted'):
+            self.vote_count += 1
+
+            # 得到过半投票后，Candidate 切换成 Leader
+            if self.state.is_majority(self.vote_count):
+                self.state.to_leader()
+
+    @validate_term
+    def on_receive_append_entries(self, data):
+        """If we discover a Leader with the same term — step down"""
+        # LIUHAO
+        # Confusion here. When 'storage.term' < data['term'], @validate_term will keep 'storage.term' update and change self to Follower.
+        # Then the code here will change self to Follower again. What I thought is that 'split vote' case may happen.
+        # This doesn't make any problem ??? . Whatever....
+        # 
+        # 这里有个二次切换 Follower 的问题，情景如下：
+        #   集群中有两个以上的 Candidate 在选举，例如叫 A、B，且 A.term > B.term；
+        #   当A选举成功，A 成为 Leader，紧接着向 B 发送 append_entries 消息，Candidate B 在
+        #   on_receive_append_entries 中 @validate_term 将 B.term := A.term，且切换成 Follower，
+        #   这里判断 B.term == A.term，会再次切换成 Follower
+        # 
+        # 上面描述的情景是有一定概率出现的，由于 Follower 的 election_interval 的随机性，再加上网络状态良好的话，
+        # 所以，出现上面情景的概率不会高。
+        if self.storage.term == data['term']:
+            self.state.to_follower()
+
+    @staticmethod
+    def election_interval():
+        return random.uniform(*config.election_interval)
+```
+
+
+
 ## Follower
 
+**state.py**
 
+```python
+class Follower(BaseRole):
+    """Raft Follower
+
+    — Respond to RPCs from candidates and leaders
+    — If election timeout elapses without receiving AppendEntries RPC from current leader
+    or granting vote to candidate: convert to candidate
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 注意这里的 election_interval 是随机生成的，随机范围参照 config.py
+        self.election_timer = Timer(self.election_interval, self.start_election)
+
+    def start(self):
+        # 初始化 storage （term、voted_for）
+        self.init_storage()
+        self.election_timer.start()
+
+    def stop(self):
+        self.election_timer.stop()
+
+    def init_storage(self):
+        """Set current term to zero upon initialization & voted_for to None"""
+        
+        # 仅仅首次初始化为0，storage 文件生成后，这里逻辑全程不会再进入
+        if not self.storage.exists('term'):
+            self.storage.update({
+                'term': 0,
+            })
+
+        # 清空 voted_for
+        self.storage.update({
+            'voted_for': None
+        })
+
+    @staticmethod
+    def election_interval():
+        return random.uniform(*config.election_interval)
+
+    @validate_commit_index
+    @validate_term
+    def on_receive_append_entries(self, data):
+        # LIUHAO: Update 'leader_id' to 'leader' property of Class State!
+        #         We can have a look at description in Class State. Like the following part:
+        #
+        #         # <Leader object> if state is leader
+        #         # <state_id> if state is follower
+        #         # <None> if leader is not chosen yet
+        #         leader = None
+        self.state.set_leader(data['leader_id'])
+
+        # Reply False if log doesn’t contain an entry at prev_log_index whose term matches prev_log_term
+        try:
+            prev_log_index = data['prev_log_index']
+            # 检查Leader侧提供的Follower的prev_log_index、Leader的term，与本地相比，是否有效
+            # 如果无效，则直接返回 False
+            # 注意：
+            # raft白皮书有提到，无效时，可以携带Follower的 last_log_index，给到 Leader 侧，这样做可以使
+            # Leader 侧快速定位 Follower 的 next_index，进而减少Leader侧无效的 append_entries 通信次数
+            if prev_log_index > self.log.last_log_index or (
+                prev_log_index and self.log[prev_log_index]['term'] != data['prev_log_term']
+            ):
+                response = {
+                    'type': 'append_entries_response',
+                    'term': self.storage.term,
+                    'success': False,
+
+                    'request_id': data['request_id']
+                }
+                # 异步回应Leader
+                asyncio.ensure_future(self.state.send(response, data['sender']), loop=self.loop)
+                return
+        except IndexError:
+            pass
+
+        # If an existing entry conflicts with a new one (same index but different terms),
+        # delete the existing entry and all that follow it
+        # 将Leader发过来的entries数据，存至Log中 new_index 开始的位置
+        new_index = data['prev_log_index'] + 1
+        try:
+            # 有冲突时，直接擦除至尾部，向Leader看齐
+            if self.log[new_index]['term'] != data['term'] or (
+                self.log.last_log_index != prev_log_index
+            ):
+                self.log.erase_from(new_index)
+        except IndexError:
+            pass
+            # LIUHAO: TODO
+            # 'log.write' will append entries to its tail. Should we reply Leader False message???
+
+        # It's always one entry for now
+        for entry in data['entries']:
+            self.log.write(entry['term'], entry['command'])
+
+        # Update commit index if necessary
+        # 注意这里的条件，Follower的commit_index 小于 Leader的commit_index时，才更新
+        # 问题：
+        # Follower的commit_index 大于 Leader的commit_index时，如何处理？
+        # 思考：
+        # 大于的情形有可能是 Follower 曾经是 Leader，commit_index 比较新 ，因为某些原因降级成 Follower。
+        # 但是，这种情形也不合理，因为 Leader 的 commit_index 只有收到过半Follower的 append_entries_response 后才会更新，
+        # 如此，Follower 的 commit_index 一定是小于 Leader 的 commit_index，直至 Leader 同步完最后一个 last_log_index 
+        # 的 entry，Follower 的 commit_index 等于 Leader 的 commit_index（因为  Leader 的 update_commit_index 遍历范围
+        # [commit_index+1, last_log_index+1) 时 index 最大值为 last_log_index ）。 
+        if self.log.commit_index < data['commit_index']:
+            self.log.commit_index = min(data['commit_index'], self.log.last_log_index)
+
+        # Respond True since entry matching prev_log_index and prev_log_term was found
+        response = {
+            'type': 'append_entries_response',
+            'term': self.storage.term,
+            'success': True,
+
+            'last_log_index': self.log.last_log_index, # LIUHAO: Here, 'log.last_log_index' will be updated for that more than 1 entry be appended to the Log list 
+            'request_id': data['request_id']
+        }
+        asyncio.ensure_future(self.state.send(response, data['sender']), loop=self.loop)
+
+        # 重置选举定时器
+        self.election_timer.reset()
+
+    @validate_term
+    def on_receive_request_vote(self, data):
+        # LIUAHO: Insure that Follower has not voted for any Candidate
+        if self.storage.voted_for is None and not data['type'].endswith('_response'):
+
+            # Candidates' log has to be up-to-date
+
+            # If the logs have last entries with different terms,
+            # then the log with the later term is more up-to-date. If the logs end with the same term,
+            # then whichever log is longer is more up-to-date.
+
+            if data['last_log_term'] != self.log.last_log_term:
+                up_to_date = data['last_log_term'] > self.log.last_log_term
+            else:
+                up_to_date = data['last_log_index'] >= self.log.last_log_index
+
+            if up_to_date:
+                self.storage.update({
+                    'voted_for': data['candidate_id']
+                })
+
+            response = {
+                'type': 'request_vote_response',
+                'term': self.storage.term,
+                'vote_granted': up_to_date
+            }
+
+            asyncio.ensure_future(self.state.send(response, data['sender']), loop=self.loop)
+
+    def start_election(self):
+        self.state.to_candidate()
+
+
+def leader_required(func):
+
+    @functools.wraps(func)
+    async def wrapped(cls, *args, **kwargs):
+        # 确保或等待当前集群中存在 Leader
+        await cls.wait_for_election_success()
+        # 如果 Leader 不是自己，抛出异常
+        if not isinstance(cls.leader, Leader):
+            raise NotALeaderException(
+                'Leader is {}!'.format(cls.leader or 'not chosen yet')
+            )
+
+        return await func(cls, *args, **kwargs)
+    return wrapped
+```
 
 
 
