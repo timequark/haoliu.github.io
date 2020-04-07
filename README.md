@@ -4,7 +4,7 @@
 
 # raft4j
 
-基于raft协议的 java 实现，[源码分析](https://timequark.github.io/apache-ratis)
+基于raft协议的 java 实现，[源码分析](https://timequark.github.io/raft4j)
 
 # SOFA-jraft
 
