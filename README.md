@@ -1,8 +1,8 @@
-# Raft
+# raft
 
 分布式一致性协议，[源码分析](https://timequark.github.io/raft)
 
-## Apache Ratis
+# raft4j
 
 基于raft协议的 java 实现，[源码分析](https://timequark.github.io/apache-ratis)
 
