@@ -8,10 +8,16 @@
 
 ![](https://timequark.github.io/raft4j/img/rpc-architecture.jpg)
 
+（可以下载保存图片看大图~~~）
+
 ## RPCServer
 
 ![](https://timequark.github.io/raft4j/img/rpc-server-uml.jpg)
 
+（可以下载保存图片看大图~~~）
+
 ## RPCClient
 
 ![](https://timequark.github.io/raft4j/img/rpc-client-uml.jpg)
+
+（可以下载保存图片看大图~~~）
