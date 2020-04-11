@@ -6,5 +6,5 @@
 
 了解raft原理的好处、目的是，更好的理解raft源码，不至于非常吃力~
 
-## raft4j源码分析（一） - [rpc通信层](https://timequark.github.io/raft4j/rpc)
+## raft4j源码分析（一） - [RPC通信](https://timequark.github.io/raft4j/rpc)
 
